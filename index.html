@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Run Away!</title>
+<style>
+  body { background:#111; color:#eee; font-family:monospace; text-align:center; margin:0; padding-top:20px; }
+  canvas { background:#e8e8e8; border:3px solid #444; }
+</style>
+</head>
+<body>
+<h2>RUN AWAY!</h2>
+<canvas id="c" width="1280" height="840"></canvas>
+<p>Arrow keys to move. Don't get caught. Space to restart.</p>
+<script>
+const c = document.getElementById('c'), ctx = c.getContext('2d');
+
+// Optional: put your own sprites here (URL or file path), e.g. 'player.png'
+const PLAYER_IMG_SRC = 'kriso crop.png', CHASER_IMG_SRC = 'varg crop.png';
+const pImg = new Image(), cImg = new Image();
+if (PLAYER_IMG_SRC) pImg.src = PLAYER_IMG_SRC;
+if (CHASER_IMG_SRC) cImg.src = CHASER_IMG_SRC;
+
+const keys = {};
+addEventListener('keydown', e => {
+  keys[e.key] = true;
+  if (e.key.startsWith('Arrow')) e.preventDefault();
+  if (e.key === ' ' && over) reset();
+});
+addEventListener('keyup', e => keys[e.key] = false);
+
+let player, chaser, score, over, chaseSpeed, frame;
+
+function reset() {
+  player = { x: 500, y: 300, r: 22, speed: 3.4 };
+  chaser = { x: 80, y: 80, r: 24 };
+  chaseSpeed = 1.6; score = 0; over = false; frame = 0;
+  loop();
+}
+
+function drawPlayer(p) {
+  if (PLAYER_IMG_SRC && pImg.complete) {
+    ctx.drawImage(pImg, p.x - 60, p.y - 80, 120, 160); return;
+  }
+  // long hair
+  ctx.fillStyle = '#2a1a14';
+  ctx.beginPath(); ctx.ellipse(p.x, p.y - 8, 26, 34, 0, 0, Math.PI * 2); ctx.fill();
+  // face
+  ctx.fillStyle = '#f0c8a0';
+  ctx.beginPath(); ctx.arc(p.x, p.y - 12, 13, 0, Math.PI * 2); ctx.fill();
+  // sunglasses
+  ctx.fillStyle = '#000';
+  ctx.fillRect(p.x - 11, p.y - 16, 9, 5); ctx.fillRect(p.x + 2, p.y - 16, 9, 5);
+  // scared mouth
+  ctx.beginPath(); ctx.ellipse(p.x, p.y - 3, 4, 5, 0, 0, Math.PI * 2); ctx.fill();
+  // jacket
+  ctx.fillStyle = '#1c2b3a';
+  ctx.fillRect(p.x - 16, p.y + 4, 32, 26);
+}
+
+function drawChaser(ch) {
+  if (CHASER_IMG_SRC && cImg.complete) {
+    ctx.drawImage(cImg, ch.x - 60, ch.y - 80, 120, 160); return;
+  }
+  ctx.strokeStyle = '#000'; ctx.lineWidth = 2; ctx.fillStyle = '#fff';
+  ctx.beginPath(); ctx.arc(ch.x, ch.y, ch.r, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+  // eyes + grin
+  ctx.fillStyle = '#000';
+  ctx.beginPath(); ctx.arc(ch.x - 8, ch.y - 5, 3, 0, 7); ctx.fill();
+  ctx.beginPath(); ctx.arc(ch.x + 8, ch.y - 5, 3, 0, 7); ctx.fill();
+  ctx.beginPath(); ctx.arc(ch.x, ch.y + 2, 11, 0.15 * Math.PI, 0.85 * Math.PI); ctx.stroke();
+  // stubby reaching arms
+  ctx.beginPath();
+  ctx.moveTo(ch.x - ch.r, ch.y); ctx.lineTo(ch.x - ch.r - 12, ch.y - 8);
+  ctx.moveTo(ch.x + ch.r, ch.y); ctx.lineTo(ch.x + ch.r + 12, ch.y - 8);
+  ctx.stroke();
+}
+
+function loop() {
+  if (over) return;
+  frame++;
+  if (keys.ArrowLeft)  player.x -= player.speed;
+  if (keys.ArrowRight) player.x += player.speed;
+  if (keys.ArrowUp)    player.y -= player.speed;
+  if (keys.ArrowDown)  player.y += player.speed;
+  player.x = Math.max(25, Math.min(c.width - 25, player.x));
+  player.y = Math.max(35, Math.min(c.height - 35, player.y));
+
+  // chaser homes in and slowly speeds up
+  const dx = player.x - chaser.x, dy = player.y - chaser.y, d = Math.hypot(dx, dy);
+  chaser.x += dx / d * chaseSpeed; chaser.y += dy / d * chaseSpeed;
+  chaseSpeed += 0.0015;
+  score = Math.floor(frame / 60);
+
+  if (d < player.r + chaser.r) over = true;
+
+  ctx.clearRect(0, 0, c.width, c.height);
+  drawChaser(chaser); drawPlayer(player);
+  ctx.fillStyle = '#000'; ctx.font = '18px monospace';
+  ctx.fillText('Survived: ' + score + 's', 12, 24);
+
+  if (over) {
+    ctx.fillStyle = 'rgba(0,0,0,.7)'; ctx.fillRect(0, 0, c.width, c.height);
+    ctx.fillStyle = '#fff'; ctx.textAlign = 'center';
+    ctx.font = '32px monospace'; ctx.fillText('CAUGHT!', c.width / 2, 190);
+    ctx.font = '18px monospace';
+    ctx.fillText('You survived ' + score + ' seconds. Press Space.', c.width / 2, 225);
+    ctx.textAlign = 'left';
+    return;
+  }
+  requestAnimationFrame(loop);
+}
+reset();
+</script>
+</body>
+</html>
